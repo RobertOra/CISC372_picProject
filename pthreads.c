@@ -3,7 +3,7 @@
 #include <time.h>
 #include <string.h>
 #include <pthread.h>
-#include "image.h"
+#include "pthreads.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -11,7 +11,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-#define NUM_THREADS 4
+#define NUM_THREADS 64
 
 //An array of kernel matrices to be used for image convolution.  
 //The indexes of these match the enumeration from the header file. ie. algorithms[BLUR] returns the kernel corresponding to a box blur.
@@ -75,13 +75,6 @@ void threadedConvolute(Image *srcImage, Image *destImage, Matrix algorithm) {
     }
 }
 
-typedef struct {
-    Image *srcImage;
-    Image *destImage;
-    long rank;
-    Matrix algorithm;
-} ThreadData;
-
 //convolute:  Applies a kernel matrix to an image
 //Parameters: srcImage: The image being convoluted
 //            destImage: A pointer to a  pre-allocated (including space for the pixel array) structure to receive the convoluted image.  It should be the same size as srcImage
@@ -97,7 +90,8 @@ void *convolute(void *data) {
 
     ThreadData *threadData = (ThreadData *)data;
     long my_rank = threadData->rank;
-    Matrix algorithm = threadData->algorithm;
+    Matrix algorithm;
+    memcpy(algorithm, threadData->algorithm, sizeof(Matrix));
 
     int inc = threadData->srcImage->height / NUM_THREADS;
     row = my_rank * inc;
