@@ -57,28 +57,28 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
 typedef struct {
     Image *srcImage;
     Image *destImage;
-    int startRow;
-    int endRow;
+    long rank;
+    Matrix algorithm;
 } ThreadData;
 
-void threadedConvolute() {
+void threadedConvolute(Image *srcImage, Image *destImage, Matrix algorithm) {
     long i;
     pthread_t threads[NUM_THREADS];
-    pthread_mutex_init(&image_lock, NULL);
 
     for (i = 0; i < NUM_THREADS; i++) {
-        ThreadData threadData;
-        threadData.rank = i;
-        memcpy(threadData.algorithm, algorithm, sizeof(Matrix));
+        ThreadData *threadData = malloc(sizeof(ThreadData));
+        threadData->srcImage = srcImage;
+        threadData->destImage = destImage;
+        threadData->rank = i;
+        memcpy(threadData->algorithm, algorithm, sizeof(Matrix));
         
-        pthread_create(&threads[i], NULL, &convolute, (void *)&threadData);
+        pthread_create(&threads[i], NULL, &convolute, (void *)threadData);
     }
 
     for (i = 0; i < NUM_THREADS; i++) {
         pthread_join(threads[i], NULL);
+        free(threadData);
     }
-    
-    pthread_mutex_destroy(&image_lock);
 }
 
 typedef struct {
@@ -163,7 +163,7 @@ int main(int argc,char** argv){
     destImage.height=srcImage.height;
     destImage.width=srcImage.width;
     destImage.data=malloc(sizeof(uint8_t)*destImage.width*destImage.bpp*destImage.height);
-    convolute(&srcImage,&destImage,algorithms[type]);
+    threadedConvolute(&srcImage, &destImage, algorithms[type]);
     stbi_write_png("output.png",destImage.width,destImage.height,destImage.bpp,destImage.data,destImage.bpp*destImage.width);
     stbi_image_free(srcImage.data);
     
