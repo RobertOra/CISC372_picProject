@@ -54,13 +54,6 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
     return result;
 }
 
-typedef struct {
-    Image *srcImage;
-    Image *destImage;
-    long rank;
-    Matrix algorithm;
-} ThreadData;
-
 void threadedConvolute(Image *srcImage, Image *destImage, Matrix algorithm) {
     long i;
     pthread_t threads[NUM_THREADS];
@@ -83,6 +76,8 @@ void threadedConvolute(Image *srcImage, Image *destImage, Matrix algorithm) {
 }
 
 typedef struct {
+    Image *srcImage;
+    Image *destImage;
     long rank;
     Matrix algorithm;
 } ThreadData;
@@ -104,16 +99,16 @@ void *convolute(void *data) {
     long my_rank = threadData->rank;
     Matrix algorithm = threadData->algorithm;
 
-    int inc = srcImage.height / NUM_THREADS;
+    int inc = threadData->srcImage->height / NUM_THREADS;
     row = my_rank * inc;
     end_row = row + inc - 1;
 
     for (; row <= end_row; row++){
-        for (pix=0;pix<srcImage.width;pix++){
-            for (bit=0;bit<srcImage.bpp;bit++){
-                ind = Index(pix,row,srcImage.width,bit,srcImage.bpp);
-                pvalue = getPixelValue(&srcImage,pix,row,bit,algorithm);
-                destImage.data[ind] = pvalue;
+        for (pix=0;pix<threadData->srcImage->width;pix++){
+            for (bit=0;bit<threadData->srcImage->bpp;bit++){
+                ind = Index(pix,row,threadData->srcImage->width,bit,threadData->srcImage->bpp);
+                pvalue = getPixelValue(threadData->srcImage,pix,row,bit,algorithm);
+                threadData->destImage->data[ind] = pvalue;
             }
         }
     }
