@@ -1,7 +1,9 @@
 
 image:image.c image.h
 	gcc -g image.c -o image -lm
-image:pthreads.c pthreads.h
+pthreads:pthreads.c pthreads.h
 	gcc -g pthreads.c -o pthreads -lm -lpthread
+openmp: openmp.c openmp.h
+	gcc -g openmp.c -o openmp -lm -fopenmp
 clean:
 	rm -f image output.png
