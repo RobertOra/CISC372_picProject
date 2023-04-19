@@ -64,20 +64,21 @@ typedef struct {
 void threadedConvolute(Image *srcImage, Image *destImage, Matrix algorithm) {
     long i;
     pthread_t threads[NUM_THREADS];
+    ThreadData *threadData[NUM_THREADS];  // Create an array of ThreadData pointers
 
     for (i = 0; i < NUM_THREADS; i++) {
-        ThreadData *threadData = malloc(sizeof(ThreadData));
-        threadData->srcImage = srcImage;
-        threadData->destImage = destImage;
-        threadData->rank = i;
-        memcpy(threadData->algorithm, algorithm, sizeof(Matrix));
+        threadData[i] = malloc(sizeof(ThreadData));
+        threadData[i]->srcImage = srcImage;
+        threadData[i]->destImage = destImage;
+        threadData[i]->rank = i;
+        memcpy(threadData[i]->algorithm, algorithm, sizeof(Matrix));
         
-        pthread_create(&threads[i], NULL, &convolute, (void *)threadData);
+        pthread_create(&threads[i], NULL, &convolute, (void *)threadData[i]);
     }
 
     for (i = 0; i < NUM_THREADS; i++) {
         pthread_join(threads[i], NULL);
-        free(threadData);
+        free(threadData[i]);  // Free the threadData pointer here
     }
 }
 
@@ -172,3 +173,4 @@ int main(int argc,char** argv){
     printf("Took %ld seconds\n",t2-t1);
    return 0;
 }
+
