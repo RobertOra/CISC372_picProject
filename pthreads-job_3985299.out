@@ -1,0 +1,2 @@
+Usage: image <filename> <type>
+	where type is one of (edge,sharpen,blur,gauss,emboss,identity)
