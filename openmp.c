@@ -4,7 +4,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <omp.h>
-#include "pthreads.h"
+#include "openmp.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -57,13 +57,21 @@ void threadedConvolute(Image *srcImage, Image *destImage, Matrix algorithm) {
     int row, pix, bit, ind;
     uint8_t pvalue;
 
-    #pragma omp parallel for private(row, pix, bit, ind, pvalue) num_threads(NUM_THREADS) collapse(2)
-    for (row = 0; row < srcImage->height; row++){
-        for (pix = 0; pix < srcImage->width; pix++){
-            for (bit = 0; bit < srcImage->bpp; bit++){
-                ind = Index(pix, row, srcImage->width, bit, srcImage->bpp);
-                pvalue = getPixelValue(srcImage, pix, row, bit, algorithm);
-                destImage->data[ind] = pvalue;
+    #pragma omp parallel private(row, pix, bit, ind, pvalue)
+    {
+        int my_rank = omp_get_thread_num();
+        int thread_count = omp_get_num_threads();
+        int local_start = (srcImage->height / thread_count) * my_rank;
+        int local_end = (srcImage->height / thread_count) * (my_rank + 1);
+        int true_end = local_end < srcImage->height ? local_end : srcImage->height;
+
+        for (row = local_start; row < true_end; row++) {
+            for (pix = 0; pix < srcImage->width; pix++) {
+                for (bit = 0; bit < srcImage->bpp; bit++) {
+                    ind = Index(pix, row, srcImage->width, bit, srcImage->bpp);
+                    pvalue = getPixelValue(srcImage, pix, row, bit, algorithm);
+                    destImage->data[ind] = pvalue;
+                }
             }
         }
     }
